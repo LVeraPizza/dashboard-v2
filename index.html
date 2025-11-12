@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard de Administración</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            padding: 20px;
+            margin-top: 60px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h3 {
+            margin: 10px 0;
+            font-size: 20px;
+        }
+
+        .card p {
+            color: #555;
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2><a href="index.html">Admin Dashboard</a></h2>
+
+            <ul>
+                <li><a href="admin.html">Productos / Promociones</a></li>
+                <li><a href="settings.html">Estado de la App</a></li>
+                <li><a href="envio-settings.html">Envios Settings</a></li>
+                <li><a href="telefonos-db.html">Puntos Acumulados</a></li>
+                <li><a href="datos.html">Datos de Usuarios</a></li>
+            </ul>
+
+            <!-- ✅ Sacado del UL para evitar el recuadro -->
+            <header class="dashboard-header">
+                <button class="logout-button" onclick="cerrarSesion()">Salir de la sesión</button>
+            </header>
+
+            <div class="sidebar-logo">
+                <img src="logo_vp.png" alt="Logo" />
+            </div>
+        </aside>
+
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+        <div class="main-content-1">
+
+            <div class="container">
+                <div class="grid">
+                    <div class="card" onclick="location.href='admin.html'">
+                        <h3>Productos</h3>
+                        <p>Agregar, editar o eliminar productos.</p>
+                    </div>
+
+                    <div class="card" onclick="location.href='settings.html'">
+                        <h3>Abrir y Cerrar App</h3>
+                        <p>Abierto o cerrado app.</p>
+                    </div>
+
+                    <div class="card" onclick="location.href='envio-settings.html'">
+                        <h3>Hab/Des Envios</h3>
+                        <p>Habilitar o Deshabilitar envios</p>
+                    </div>
+
+                    <div class="card" onclick="location.href='telefonos-db.html'">
+                        <h3>Puntos Acumulados</h3>
+                        <p>Puntos de Fidelizacion de los clientes</p>
+                    </div>
+
+                    <div class="card" onclick="location.href='pedidos.html'">
+                        <h3>Pedidos</h3>
+                        <p>Lista de Pedidos</p>
+                    </div>
+
+                    <div class="card" onclick="location.href='datos.html'">
+                        <h3>Datos De Usuarios</h3>
+                        <p>Datos ingresos usuarios</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+    // ✅ CONFIGURACIÓN FIREBASE
+    const firebaseConfig = {
+        apiKey: "AIzaSyCzMNKimcw1kaaJlMdTKj7RAdlsHyaImBk",
+        authDomain: "vera-pizza-app.firebaseapp.com",
+        databaseURL: "https://vera-pizza-app-default-rtdb.firebaseio.com/",
+        projectId: "vera-pizza-app",
+        storageBucket: "vera-pizza-app.appspot.com",
+        messagingSenderId: "783988757356",
+        appId: "1:783988757356:web:c66d3f2571aff0f125d949",
+        measurementId: "G-FNLSPHKXFW"
+    };
+
+    // ✅ Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // ✅ Obtener instancia de autenticación
+    const auth = getAuth(app);
+
+    // ✅ Mostrar/Ocultar sidebar
+    window.toggleSidebar = function () {
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content-1');
+
+        sidebar.classList.toggle('show');
+
+        if (sidebar.classList.contains('show')) {
+            mainContent.classList.remove('centered');
+        } else {
+            mainContent.classList.add('centered');
+        }
+    };
+
+    // ✅ Cerrar sesión real de Firebase
+    window.cerrarSesion = async function () {
+        try {
+            await signOut(auth);
+
+            // ✅ Borrar cualquier dato de sesión
+            localStorage.removeItem("loginTime");
+            localStorage.removeItem("lastVisitTime");
+
+            // ✅ Evitar auto-login al volver a index
+            sessionStorage.setItem("logout", "1");
+
+            alert("Sesión cerrada correctamente ✅");
+
+            window.location.href = "../../index.html";
+
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+            alert("Error al cerrar sesión");
+        }
+    };
+</script>
+
+
+</body>
+
+</html>

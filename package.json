@@ -1,0 +1,56 @@
+{
+  "name": "dashboard",
+  "productName": "Dashboard",
+  "version": "0.1.0",
+  "description": "Panel de administración de Vera Pizza",
+  "author": "LVeraPizza",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.lverapizza.dashboard",
+    "productName": "Dashboard Vera Pizza",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/.bin",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Dashboard Vera Pizza"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "LVeraPizza",
+        "repo": "dashboard"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.8"
+  },
+  "devDependencies": {
+    "electron": "^31.0.2",
+    "electron-builder": "^25.1.8"
+  }
+}

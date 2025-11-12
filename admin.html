@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrador de Productos</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f1f3f5;
+      margin: 0;
+    }
+
+    h2,
+    h3 {
+      text-align: center;
+      color: #222;
+      margin-top: 20px;
+    }
+
+    /* ===== SWITCH ===== */
+    .switch-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 25px;
+      margin-top: 30px;
+      font-size: 1.1em;
+    }
+
+    .switch {
+      position: relative;
+      width: 58px;
+      height: 30px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #bbb;
+      transition: .4s;
+      border-radius: 30px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 23px;
+      width: 23px;
+      left: 3.5px;
+      bottom: 3.5px;
+      background: white;
+      border-radius: 50%;
+      transition: .4s;
+    }
+
+    input:checked+.slider {
+      background: #2563eb;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(28px);
+    }
+
+    /* ===== FORM ===== */
+    form {
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      max-width: 550px;
+      margin: auto;
+      box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 10px;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e4cd8;
+    }
+
+    /* ===== PREVIEW CARD ===== */
+    .product-card-preview {
+      background: white;
+      border-radius: 16px;
+      padding: 15px;
+      margin: 25px auto;
+      max-width: 360px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: none;
+    }
+
+    .product-card-preview img {
+      width: 100%;
+      height: 180px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    /* ===== CARDS LIST ===== */
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+      margin-bottom: 18px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .card-content {
+      margin-top: 12px;
+    }
+
+    .card-content h3 {
+      margin: 0;
+      font-size: 1.2em;
+    }
+
+    .card-buttons {
+      margin-top: 15px;
+      display: flex;
+      width: 100%;
+      gap: 10px;
+    }
+
+    .btn-edit,
+    .btn-toggle {
+      flex: 1;
+      padding: 12px;
+      font-size: 1em;
+      border-radius: 10px;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .btn-edit {
+      background: #f59e0b;
+    }
+
+    .btn-edit:hover {
+      background: #d98303;
+    }
+
+    .btn-toggle {
+      background: #10b981;
+    }
+
+    .btn-toggle.inactivo {
+      background: #ef4444;
+    }
+
+    /* Desktop */
+    @media (min-width:700px) {
+      .card {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .card img {
+        width: 120px;
+        height: 120px;
+      }
+
+      .card-content {
+        flex: 1;
+        margin-left: 20px;
+      }
+
+      .card-buttons {
+        flex-direction: column;
+        width: 160px;
+        margin-top: 0;
+      }
+
+      .btn-edit,
+      .btn-toggle {
+        width: 100%;
+        flex: none;
+      }
+    }
+
+    /* ===== MODAL ===== */
+    #editModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+      z-index: 999;
+    }
+
+    #modalContent {
+      background: white;
+      width: 90%;
+      max-width: 450px;
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: fade 0.25s ease-out;
+      margin: auto;
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    #modalContent img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 14px;
+      margin-bottom: 5px;
+    }
+
+    .modal-close {
+      background: #ef4444;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* Inputs modal */
+    #modalContent input,
+    #modalContent select,
+    #modalContent textarea,
+    #guardarCambios {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* ===== SPINNER ===== */
+    #spinner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 1000;
+      display: none;
+    }
+
+    .spinner {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #2563eb;
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner-text {
+      color: white;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+
+    #buscador {
+      width: auto !important;
+      flex: 1 !important;
+    }
+  </style>
+
+  <style>
+    #logoutBtn {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      padding: 10px 18px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      z-index: 1001;
+      width: 20% !important;
+    }
+
+    #logoutBtn:hover {
+      background: #d63636;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2><a href="index.html">Admin Dashboard</a></h2>
+
+      <ul>
+        <li><a href="admin.html">Productos / Promociones</a></li>
+        <li><a href="settings.html">Estado de la App</a></li>
+        <li><a href="envio-settings.html">Envios Settings</a></li>
+        <li><a href="telefonos-db.html">Puntos Acumulados</a></li>
+         <li><a href="datos.html">Datos de Usuarios</a></li>
+      </ul>
+
+      <!-- ✅ Sacado del UL para evitar el recuadro -->
+      <header class="dashboard-header">
+        <button class="logout-button" onclick="cerrarSesion()">Salir de la sesión</button>
+      </header>
+
+      <div class="sidebar-logo">
+        <img src="logo_vp.png" alt="Logo" />
+      </div>
+    </aside>
+
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <div class="main-content-1">
+
+      <h2>Administrador de Productos</h2>
+
+      <!-- SWITCH -->
+      <div class="switch-container">
+        <span>Productos</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleTipo">
+          <span class="slider"></span>
+        </label>
+        <span>Promociones</span>
+      </div>
+
+      <!-- FORM -->
+      <form id="productForm">
+        <h2 id="formTitle">Agregar Producto</h2>
+        <input type="text" id="nombre" placeholder="Nombre" required>
+        <textarea id="descripcion" placeholder="Descripción" required></textarea>
+        <input type="number" id="precio" placeholder="Precio" required>
+        <div id="categoriaContainer">
+          <select id="categoria">
+            <option value="">Seleccionar Categoría</option>
+            <option value="Pizzas Napolitanas">Pizzas Napolitanas</option>
+            <option value="Pizzas Romanas">Pizzas Romanas</option>
+            <option value="Focacceria">Focacceria</option>
+            <option value="Paninis">Paninis</option>
+            <option value="Calzones">Calzones</option>
+          </select>
+        </div>
+        <select id="activo">
+          <option value="true">Activo</option>
+          <option value="false">Inactivo</option>
+        </select>
+        <label>Imagen:</label>
+        <input type="file" id="imagen" accept="image/*" required>
+        <button type="submit">Guardar</button>
+      </form>
+
+      <!-- PREVIEW -->
+      <h3>Vista Previa</h3>
+      <div id="cardPreview" class="product-card-preview"></div>
+
+      <!-- BUSCADOR -->
+      <div id="buscadorContainer" style="max-width:800px;margin:30px auto 10px auto; display:flex; gap:10px;">
+        <input type="text" id="buscador" placeholder="Buscar producto..."
+          style="flex:1; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:1em;">
+
+        <select id="filtroCategoria" style="padding:12px; border-radius:10px; border:1px solid #ccc; font-size:1em;">
+          <option value="">Categoría</option>
+          <option value="Pizzas Napolitanas">Pizzas Napolitanas</option>
+          <option value="Pizzas Romanas">Pizzas Romanas</option>
+          <option value="Focacceria">Focacceria</option>
+          <option value="Paninis">Paninis</option>
+          <option value="Calzones">Calzones</option>
+        </select>
+      </div>
+
+
+      <!-- LISTADO -->
+      <h2 style="margin-top:40px; margin-bottom: 20px;">Listado</h2>
+      <div id="productList" style="max-width:800px;margin:auto;"></div>
+
+      <!-- MODAL EDITAR -->
+      <div id="editModal">
+        <div id="modalContent">
+          <h2>Editar</h2>
+          <img id="editImgPreview" src="">
+          <input type="text" id="editNombre" placeholder="Nombre">
+          <textarea id="editDescripcion" placeholder="Descripción"></textarea>
+          <input type="number" id="editPrecio" placeholder="Precio">
+          <select id="editCategoria">
+            <option value="">Categoría</option>
+            <option value="Pizzas Napolitanas">Pizzas Napolitanas</option>
+            <option value="Pizzas Romanas">Pizzas Romanas</option>
+            <option value="Focacceria">Focacceria</option>
+            <option value="Paninis">Paninis</option>
+            <option value="Calzones">Calzones</option>
+          </select>
+          <select id="editActivo">
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
+          </select>
+          <label>Nueva Imagen:</label>
+          <input type="file" id="editImagen" accept="image/*">
+          <button id="guardarCambios" style="background:#2563eb;">Guardar Cambios</button>
+          <button class="modal-close" onclick="cerrarModal()">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- SPINNER -->
+      <div id="spinner">
+        <div class="spinner"></div>
+        <div class="spinner-text">Guardando producto...</div>
+      </div>
+    </div>
+    <!-- FIREBASE + SCRIPT -->
+<script type="module" defer>
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, updateDoc, doc
+  } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+  import {
+    getStorage, ref, uploadBytesResumable, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+  import {
+    getAuth, signOut
+  } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+
+  // ✅ FIREBASE
+  const firebaseConfig = {
+    apiKey: "AIzaSyCzMNKimcw1kaaJlMdTKj7RAdlsHyaImBk",
+    authDomain: "vera-pizza-app.firebaseapp.com",
+    projectId: "vera-pizza-app",
+    storageBucket: "vera-pizza-app.appspot.com",
+    messagingSenderId: "783988757356",
+    appId: "1:783988757356:web:c66d3f2571aff0f125d949"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+  const auth = getAuth(app);
+
+  // ✅ SIDEBAR — SE HACE GLOBAL ANTES DE TODO
+  window.toggleSidebar = function () {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content-1');
+
+    sidebar.classList.toggle('show');
+
+    if (sidebar.classList.contains('show')) {
+      mainContent.classList.remove('centered');
+    } else {
+      mainContent.classList.add('centered');
+    }
+  };
+
+  // ✅ FORMULARIO
+  const toggle = document.getElementById("toggleTipo");
+  const titulo = document.getElementById("formTitle");
+  const categoriaContainer = document.getElementById("categoriaContainer");
+
+  toggle.addEventListener("change", () => {
+    if (toggle.checked) {
+      titulo.innerText = "Agregar Promoción";
+      categoriaContainer.style.display = "none";
+    } else {
+      titulo.innerText = "Agregar Producto";
+      categoriaContainer.style.display = "block";
+    }
+    cargarProductos();
+  });
+
+  const inputs = {
+    nombre: document.getElementById("nombre"),
+    descripcion: document.getElementById("descripcion"),
+    precio: document.getElementById("precio"),
+    categoria: document.getElementById("categoria"),
+    activo: document.getElementById("activo"),
+    imagen: document.getElementById("imagen")
+  };
+
+  const cardPreview = document.getElementById("cardPreview");
+  let previewImgURL = "";
+
+  function actualizarCardPreview() {
+    const nombre = inputs.nombre.value;
+    const descripcion = inputs.descripcion.value;
+    const precio = inputs.precio.value;
+    const categoria = inputs.categoria.value;
+    const activo = inputs.activo.value === "true";
+
+    if (!nombre && !precio && !previewImgURL) {
+      cardPreview.style.display = "none";
+      return;
+    }
+
+    cardPreview.style.display = "block";
+    cardPreview.innerHTML = `
+      <img src="${previewImgURL}">
+      <h3>${nombre}</h3>
+      <p>${descripcion}</p>
+      <p><strong>Precio:</strong> $${precio}</p>
+      <p><strong>Categoría:</strong> ${categoria}</p>
+      <p><strong>Estado:</strong> 
+        <span style="color:${activo ? "green" : "red"}">${activo ? "Activo" : "Inactivo"}</span>
+      </p>`;
+  }
+
+  inputs.nombre.addEventListener("input", actualizarCardPreview);
+  inputs.descripcion.addEventListener("input", actualizarCardPreview);
+  inputs.precio.addEventListener("input", actualizarCardPreview);
+  inputs.categoria.addEventListener("input", actualizarCardPreview);
+  inputs.activo.addEventListener("input", actualizarCardPreview);
+
+  inputs.imagen.addEventListener("change", () => {
+    const file = inputs.imagen.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      previewImgURL = reader.result;
+      actualizarCardPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ✅ SUBIR PRODUCTO / PROMO
+  document.getElementById("productForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    document.getElementById("spinner").style.display = "flex";
+
+    const nombre = inputs.nombre.value;
+    const descripcion = inputs.descripcion.value;
+    const precio = Number(inputs.precio.value);
+    const categoria = toggle.checked ? "" : inputs.categoria.value;
+    const activo = inputs.activo.value === "true";
+    const imagenFile = inputs.imagen.files[0];
+
+    const coleccion = toggle.checked ? "promociones" : "productos";
+
+    const cleanName = nombre.replace(/\s+/g, "_").toLowerCase();
+    const storageRef = ref(storage, "productos/" + cleanName + "_" + Date.now());
+    const uploadTask = uploadBytesResumable(storageRef, imagenFile);
+
+    uploadTask.on(
+      "state_changed",
+      () => { },
+      (error) => {
+        document.getElementById("spinner").style.display = "none";
+        alert("❌ Error subiendo imagen.");
+      },
+      async () => {
+        const imgURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+        await addDoc(collection(db, coleccion), {
+          nombre,
+          descripcion,
+          precio,
+          categoria,
+          activo,
+          tipo: toggle.checked ? "promocion" : "producto",
+          imgURL,
+        });
+
+        document.getElementById("spinner").style.display = "none";
+        alert("✅ Guardado correctamente!");
+        document.getElementById("productForm").reset();
+        previewImgURL = "";
+        cardPreview.style.display = "none";
+        cargarProductos();
+      }
+    );
+  });
+
+  // ✅ CARGAR PRODUCTOS
+  async function cargarProductos() {
+    const contenedor = document.getElementById("productList");
+    const coleccion = toggle.checked ? "promociones" : "productos";
+
+    const textoBusqueda = document.getElementById("buscador")?.value.toLowerCase() || "";
+    const categoriaFiltro = document.getElementById("filtroCategoria")?.value || "";
+
+    const snap = await getDocs(collection(db, coleccion));
+    contenedor.innerHTML = "";
+
+    snap.forEach((docu) => {
+      const p = docu.data();
+
+      if (textoBusqueda && !p.nombre.toLowerCase().includes(textoBusqueda)) return;
+      if (categoriaFiltro && p.categoria !== categoriaFiltro) return;
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <img src="${p.imgURL}">
+        <div class="card-content">
+          <h3>${p.nombre}</h3>
+          <p style="color:#666;">$${p.precio}</p>
+          ${p.categoria ? `<p>${p.categoria}</p>` : ""}
+          <p><strong>Estado:</strong>
+            <span style="color:${p.activo ? "green" : "red"}">${p.activo ? "Activo" : "Inactivo"}</span>
+          </p>
+        </div>
+
+        <div class="card-buttons">
+          <button class="btn-edit" data-id="${docu.id}">Editar</button>
+          <button class="btn-toggle ${p.activo ? "" : "inactivo"}" data-toggle="${docu.id}">
+            ${p.activo ? "Inactivar" : "Activar"}
+          </button>
+        </div>
+      `;
+
+      contenedor.appendChild(card);
+
+      document.querySelector(`[data-toggle="${docu.id}"]`)
+        .addEventListener("click", async () => {
+          await updateDoc(doc(db, coleccion, docu.id), { activo: !p.activo });
+          cargarProductos();
+        });
+
+      document.querySelector(`[data-id="${docu.id}"]`)
+        .addEventListener("click", () =>
+          abrirModal(docu.id, p, coleccion)
+        );
+    });
+  }
+
+  // ✅ CERRAR SESIÓN GLOBAL
+  window.cerrarSesion = async function () {
+    try {
+      await signOut(auth);
+
+      localStorage.removeItem("loginTime");
+      localStorage.removeItem("lastVisitTime");
+      sessionStorage.setItem("logout", "1");
+
+      alert("Sesión cerrada.");
+      window.location.href = "../../index.html";
+
+    } catch (error) {
+      console.error("Error al cerrar sesión", error);
+    }
+  };
+
+</script>
+
+
+
+
+
+</body>
+
+</html>

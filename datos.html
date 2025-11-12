@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrador de Productos</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f1f3f5;
+      margin: 0;
+    }
+
+    h2,
+    h3 {
+      text-align: center;
+      color: #222;
+      margin-top: 20px;
+    }
+
+    /* === Tarjetas de gráficos === */
+    .charts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .chart-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-card h3 {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2><a href="index.html">Admin Dashboard</a></h2>
+
+      <ul>
+        <li><a href="admin.html">Productos / Promociones</a></li>
+        <li><a href="settings.html">Estado de la App</a></li>
+        <li><a href="envio-settings.html">Envios Settings</a></li>
+        <li><a href="telefonos-db.html">Puntos Acumulados</a></li>
+        <li><a href="datos.html">Datos de Usuarios</a></li>
+      </ul>
+
+      <header class="dashboard-header">
+        <button class="logout-button" onclick="cerrarSesion()">Salir de la sesión</button>
+      </header>
+
+      <div class="sidebar-logo">
+        <img src="logo_vp.png" alt="Logo" />
+      </div>
+    </aside>
+
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- === CONTENIDO PRINCIPAL === -->
+    <div class="main-content-1">
+
+      <h2>Estadísticas de la App</h2>
+
+      <div class="charts-container">
+
+        <div class="chart-card">
+          <h3>Ingresos por Día</h3>
+          <canvas id="chartIngresosDia"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <h3>Usuarios por Día</h3>
+          <canvas id="chartUsuariosDia"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <h3>Usuarios por Mes</h3>
+          <canvas id="chartUsuariosMes"></canvas>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- === CHART JS === -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- === SIDEBAR SCRIPT === -->
+  <script>
+    window.toggleSidebar = function () {
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content-1');
+
+      sidebar.classList.toggle('show');
+
+      if (sidebar.classList.contains('show')) {
+        mainContent.classList.remove('centered');
+      } else {
+        mainContent.classList.add('centered');
+      }
+    }
+
+    function cerrarSesion() {
+      alert("Sesión cerrada correctamente.");
+      window.location.href = "../../index.html";
+    }
+  </script>
+
+  <!-- ================================================================= -->
+  <!-- == FIREBASE + FIRESTORE: LECTURA REAL DE INGRESOS ================= -->
+  <!-- ================================================================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCzMNKimcw1kaaJlMdTKj7RAdlsHyaImBk",
+      authDomain: "vera-pizza-app.firebaseapp.com",
+      projectId: "vera-pizza-app"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function obtenerDatosIngresos() {
+      const ingresosRef = collection(db, "ingresos");
+      const q = query(ingresosRef, orderBy("timestamp", "asc"));
+      const snap = await getDocs(q);
+
+      let ingresosPorDia = {};
+      let usuariosPorDia = {};
+      let usuariosPorMes = {};
+
+      snap.forEach(doc => {
+        const data = doc.data();
+        if (!data.timestamp) return;
+
+        const fecha = data.timestamp.toDate();
+        const dia = fecha.toLocaleDateString("es-AR");
+        const mes = fecha.toLocaleString("es-AR", { month: "short" });
+
+        ingresosPorDia[dia] = (ingresosPorDia[dia] || 0) + 1;
+
+        if (!usuariosPorDia[dia]) usuariosPorDia[dia] = new Set();
+        if (data.uid) usuariosPorDia[dia].add(data.uid);
+
+        usuariosPorMes[mes] = (usuariosPorMes[mes] || 0) + 1;
+      });
+
+      for (let d in usuariosPorDia) {
+        usuariosPorDia[d] = usuariosPorDia[d].size;
+      }
+
+      return { ingresosPorDia, usuariosPorDia, usuariosPorMes };
+    }
+
+    // ✅ Exponer función global y ejecutarla al cargar
+    window.cargarGraficos = async function () {
+      const datos = await obtenerDatosIngresos();
+
+      const labelsDias = Object.keys(datos.ingresosPorDia);
+      const ingresosDias = Object.values(datos.ingresosPorDia);
+
+      const labelsUsuariosDia = Object.keys(datos.usuariosPorDia);
+      const usuariosDias = Object.values(datos.usuariosPorDia);
+
+      const labelsMes = Object.keys(datos.usuariosPorMes);
+      const usuariosMes = Object.values(datos.usuariosPorMes);
+
+      crearGrafico("chartIngresosDia", labelsDias, ingresosDias, "Ingresos");
+      crearGrafico("chartUsuariosDia", labelsUsuariosDia, usuariosDias, "Usuarios únicos");
+      crearGrafico("chartUsuariosMes", labelsMes, usuariosMes, "Usuarios por Mes");
+    };
+
+    // ✅ Ejecutamos la carga de gráficos al cargar la página
+    window.addEventListener("DOMContentLoaded", () => {
+      window.cargarGraficos();
+    });
+  </script>
+
+  <!-- === FUNCIONES DE GRÁFICOS === -->
+  <script>
+    function crearGrafico(id, etiquetas, datos, labelTexto) {
+      new Chart(document.getElementById(id), {
+        type: "line",
+        data: {
+          labels: etiquetas,
+          datasets: [{
+            label: labelTexto,
+            data: datos,
+            borderWidth: 2,
+            borderColor: "rgba(75, 192, 192, 1)",
+            backgroundColor: "rgba(75, 192, 192, 0.2)",
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+  </script>
+
+</body>
+
+</html>

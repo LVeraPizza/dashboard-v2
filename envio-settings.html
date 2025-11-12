@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envios Settings</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Ocupa toda la altura de la ventana */
+            padding: 20px;
+            text-align: center;
+            /* Fondo transparente */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            /* Sombra sutil */
+            backdrop-filter: blur(12px);
+            /* Desenfoque suave del fondo */
+            transition: all 0.3s ease-in-out;
+            /* Fondo semi-transparente */
+            border-radius: 15px;
+            /* Bordes redondeados */
+        }
+
+        /* Título */
+        h1 {
+            font-size: 28px;
+            color: black;
+            margin-bottom: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        /* Contenedor de los botones */
+        .envio-control {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        /* Botones de envío */
+        .envio-control button {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Botón Activar */
+        .envio-control button.activar {
+            background: linear-gradient(135deg, #28a745, #5cd65c);
+        }
+
+        .envio-control button.activar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Botón Desactivar */
+        .envio-control button.desactivar {
+            background: linear-gradient(135deg, #dc3545, #ff6666);
+        }
+
+        .envio-control button.desactivar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Icono dentro del botón */
+        .envio-control button i {
+            font-style: normal;
+            font-size: 18px;
+        }
+
+        /* Modal */
+        #custom-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        #custom-modal h2 {
+            margin-bottom: 20px;
+        }
+
+        #custom-modal button {
+            background: #4CAF50;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        #custom-modal button:hover {
+            background: #45a049;
+        }
+
+        /* Overlay */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+
+
+
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2><a href="index.html">Admin Dashboard</a></h2>
+            <ul>
+                <li><a href="admin.html">Productos / Promociones</a></li>
+                <li><a href="settings.html">Estado de la App</a></li>
+                <li><a href="envio-settings.html">Envios Settings</a></li>
+                <li><a href="telefonos-db.html">Puntos Acumulados</a></li>
+                <li><a href="datos.html">Datos de Usuarios</a></li>
+                <header class="dashboard-header">
+                    <button class="logout-button" onclick="cerrarSesion()">Salir de la sesión</button>
+                </header>
+            </ul>
+            <!-- Logo al final del sidebar -->
+            <div class="sidebar-logo">
+                <img src="logo_vp.png" alt="Logo" />
+            </div>
+        </aside>
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+        <div class="main-content-1">
+ <h1>Control de Envío</h1>
+            <div class="container">
+               
+
+                <!-- Estado actual -->
+                <div id="estado-envio" style="font-size:18px; font-weight:600; margin-bottom:20px; color:#333;">
+                    Cargando estado...
+                </div>
+
+                <div class="envio-control">
+                    <button class="activar" onclick="activarEnvio()"><i>✅</i> Activar Envío</button>
+                    <button class="desactivar" onclick="desactivarEnvio()"><i>❌</i> Desactivar Envío</button>
+                </div>
+            </div>
+
+
+            <!-- Modal -->
+            <div id="overlay"></div>
+            <div id="custom-modal">
+                <h2 id="modal-message">Estado actualizado</h2>
+                <button onclick="closeModal()">Aceptar</button>
+            </div>
+
+
+            <script type="module">
+                import { initializeApp } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js";
+                import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-database.js";
+
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCzMNKimcw1kaaJlMdTKj7RAdlsHyaImBk",
+                    authDomain: "vera-pizza-app.firebaseapp.com",
+                    databaseURL: "https://vera-pizza-app-default-rtdb.firebaseio.com/",
+                    projectId: "vera-pizza-app",
+                    storageBucket: "vera-pizza-app.appspot.com",
+                    messagingSenderId: "783988757356",
+                    appId: "1:783988757356:web:c66d3f2571aff0f125d949",
+                    measurementId: "G-FNLSPHKXFW"
+                };
+
+                const app = initializeApp(firebaseConfig);
+                const db = getDatabase(app);
+
+                // Mostrar modal
+                function openModal(message) {
+                    document.getElementById("modal-message").innerText = message;
+                    document.getElementById("overlay").style.display = "block";
+                    document.getElementById("custom-modal").style.display = "block";
+                }
+
+                // Cerrar modal
+                window.closeModal = function () {
+                    document.getElementById("overlay").style.display = "none";
+                    document.getElementById("custom-modal").style.display = "none";
+                }
+
+                function actualizarEstadoDiv(estado) {
+                    const div = document.getElementById("estado-envio");
+                    if (estado === true) {
+                        div.innerText = "📦 Estado actual: Envíos ACTIVOS";
+                        div.style.color = "#28a745";
+                    } else if (estado === false) {
+                        div.innerText = "📦 Estado actual: Envíos DESACTIVADOS";
+                        div.style.color = "#dc3545";
+                    } else {
+                        div.innerText = "📦 Estado actual: No definido";
+                        div.style.color = "#555";
+                    }
+                }
+
+                function activarEnvio() {
+                    set(ref(db, "Envio/EstadoEnvio"), true).then(() => {
+                        actualizarEstadoDiv(true);
+                        openModal("✅ Envío activado correctamente");
+                    });
+                }
+
+                function desactivarEnvio() {
+                    set(ref(db, "Envio/EstadoEnvio"), false).then(() => {
+                        actualizarEstadoDiv(false);
+                        openModal("❌ Envío desactivado correctamente");
+                    });
+                }
+
+                function mostrarEstadoActual() {
+                    get(ref(db, "Envio/EstadoEnvio")).then(snapshot => {
+                        const estado = snapshot.val();
+                        actualizarEstadoDiv(estado);
+                    });
+                }
+
+
+                // Ejecutar al cargar la página
+                window.addEventListener('load', mostrarEstadoActual);
+
+                window.activarEnvio = activarEnvio;
+                window.desactivarEnvio = desactivarEnvio;
+
+                window.toggleSidebar = function () {
+                    const sidebar = document.querySelector('.sidebar');
+                    const mainContent = document.querySelector('.main-content-1');
+
+                    sidebar.classList.toggle('show');
+
+                    if (sidebar.classList.contains('show')) {
+                        mainContent.classList.remove('centered');
+                    } else {
+                        mainContent.classList.add('centered');
+                    }
+                }
+
+
+
+
+            </script>
+        <script>
+            // Ejecutar al cargar la página
+            window.addEventListener('load', window.mostrarEstadoActual);
+
+            window.toggleSidebar = function () {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content-1');
+
+                sidebar.classList.toggle('show');
+
+                if (sidebar.classList.contains('show')) {
+                    mainContent.classList.remove('centered');
+                } else {
+                    mainContent.classList.add('centered');
+                }
+            }
+
+            function cerrarSesion() {
+                // Aquí puedes limpiar los datos de la sesión
+                alert("Sesión cerrada correctamente.");
+                // Redirigir a la página de inicio de sesión
+                window.location.href = "../../index.html"; // Cambia a tu página de inicio de sesión
+            }
+        </script>
+</body>
+
+
+</html>

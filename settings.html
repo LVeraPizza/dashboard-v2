@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Ocupa toda la altura de la ventana */
+            padding: 20px;
+            text-align: center;
+            /* Fondo transparente */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            /* Sombra sutil */
+            backdrop-filter: blur(12px);
+            /* Desenfoque suave del fondo */
+            transition: all 0.3s ease-in-out;
+            /* Fondo semi-transparente */
+            border-radius: 15px;
+            /* Bordes redondeados */
+        }
+
+        /* Título */
+        h1 {
+            font-size: 28px;
+            color: black;
+            margin-bottom: 20px;
+            margin-top: 30px;
+    text-align: center;
+        }
+
+        /* Estado actual */
+        #estado-actual {
+            font-size: 18px;
+            color: green;
+            margin-bottom: 20px;
+        }
+
+        /* Selector y botón */
+        select,
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid black;
+            background-color: rgb(13, 25, 197);
+            /* Fondo translúcido */
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        /* Botón */
+        button {
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        /* Selector y botones de interacción */
+        select:focus,
+        button:focus {
+            outline: none;
+            border-color: #4CAF50;
+            /* Resaltar cuando se seleccionan */
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+            /* Sombra verde */
+        }
+
+        /* Modal */
+        #custom-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        #custom-modal h2 {
+            margin-bottom: 20px;
+        }
+
+        #custom-modal button {
+            background: #4CAF50;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        #custom-modal button:hover {
+            background: #45a049;
+        }
+
+        /* Overlay */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2><a href="index.html">Admin Dashboard</a></h2>
+            <ul>
+                <li><a href="admin.html">Productos / Promociones</a></li>
+                <li><a href="settings.html">Estado de la App</a></li>
+                <li><a href="envio-settings.html">Envios Settings</a></li>
+                <li><a href="telefonos-db.html">Puntos Acumulados</a></li>
+                <li><a href="datos.html">Datos de Usuarios</a></li>
+                <header class="dashboard-header">
+                    <button class="logout-button" onclick="cerrarSesion()">Salir de la sesión</button>
+                </header>
+            </ul>
+            <!-- Logo al final del sidebar -->
+            <div class="sidebar-logo">
+                <img src="logo_vp.png" alt="Logo" />
+            </div>
+        </aside>
+         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+        <!-- Contenido principal -->
+        <div class="main-content-1">
+            <h1>Estado Actual de la App</h1>
+            <div class="container">
+                <h1>Cambiar Estado</h1>
+                <p id="estado-actual">Cargando estado...</p>
+                <select id="estado-selector">
+                    <option value="ABIERTO">ABIERTO</option>
+                    <option value="CERRADO">CERRADO</option>
+                </select>
+                <br>
+                <button onclick="updateState()">Actualizar Estado</button>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="overlay"></div>
+        <div id="custom-modal">
+            <h2 id="modal-message">Estado actualizado</h2>
+            <button onclick="closeModal()">Aceptar</button>
+        </div>
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js";
+            import { getFirestore, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCzMNKimcw1kaaJlMdTKj7RAdlsHyaImBk",
+    authDomain: "vera-pizza-app.firebaseapp.com",
+    databaseURL: "https://vera-pizza-app-default-rtdb.firebaseio.com/",
+    projectId: "vera-pizza-app",
+    storageBucket: "vera-pizza-app.appspot.com",
+    messagingSenderId: "783988757356",
+    appId: "1:783988757356:web:c66d3f2571aff0f125d949",
+    measurementId: "G-FNLSPHKXFW"
+};
+
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+
+            // Carga el estado actual desde Firestore
+            async function loadState() {
+                const docRef = doc(db, "estado", "estadoActual");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById("estado-selector").value = data.estado || "ABIERTO";
+                    document.getElementById("estado-actual").innerText = `Estado actual: ${data.estado}`;
+                    document.getElementById("estado-actual").style.color = data.estado === "ABIERTO" ? "green" : "red";
+                } else {
+                    await setDoc(docRef, { estado: "ABIERTO" });
+                    document.getElementById("estado-selector").value = "ABIERTO";
+                    document.getElementById("estado-actual").innerText = "Estado actual: ABIERTO";
+                    document.getElementById("estado-actual").style.color = "green";
+                }
+            }
+
+            // Actualiza el estado en Firestore
+            window.updateState = async function updateState() {
+                const newState = document.getElementById("estado-selector").value;
+                const docRef = doc(db, "estado", "estadoActual");
+
+                try {
+                    await updateDoc(docRef, { estado: newState });
+                    document.getElementById("estado-actual").innerText = `Estado actual: ${newState}`;
+                    document.getElementById("estado-actual").style.color = newState === "ABIERTO" ? "green" : "red";
+
+                    // Muestra el modal con el mensaje de confirmación
+                    showModal(`Estado actualizado a: ${newState}`);
+                } catch (error) {
+                    console.error("Error al actualizar el estado:", error);
+                    showModal("Hubo un error al actualizar el estado.");
+                }
+            };
+
+            // Muestra el modal con un mensaje personalizado
+            function showModal(message) {
+                document.getElementById("modal-message").innerText = message;
+                document.getElementById("overlay").style.display = "block";
+                document.getElementById("custom-modal").style.display = "block";
+            }
+
+            // Cierra el modal
+            window.closeModal = function closeModal() {
+                document.getElementById("custom-modal").style.display = "none";
+                document.getElementById("overlay").style.display = "none";
+            };
+
+            // Ejecuta la función de carga al cargar el DOM
+            document.addEventListener("DOMContentLoaded", loadState);
+        </script>
+
+        <script>
+            // Ejecutar al cargar la página
+            window.addEventListener('load', window.mostrarEstadoActual);
+
+            window.toggleSidebar = function () {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content-1');
+
+                sidebar.classList.toggle('show');
+
+                if (sidebar.classList.contains('show')) {
+                    mainContent.classList.remove('centered');
+                } else {
+                    mainContent.classList.add('centered');
+                }
+            }
+
+            function cerrarSesion() {
+                // Aquí puedes limpiar los datos de la sesión
+                alert("Sesión cerrada correctamente.");
+                // Redirigir a la página de inicio de sesión
+                window.location.href = "../../index.html"; // Cambia a tu página de inicio de sesión
+            }
+        </script>
+</body>
+
+</html>

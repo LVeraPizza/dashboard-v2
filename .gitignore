@@ -1,0 +1,11 @@
+# No subir dependencias ni builds
+node_modules/
+dist/
+out/
+*.exe
+*.zip
+*.log
+
+# Archivos temporales
+.DS_Store
+Thumbs.db

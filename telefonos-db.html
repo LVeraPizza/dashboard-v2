@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telefonos DB</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2><a href="index.html">Admin Dashboard</a></h2>
+            <ul>
+                <li><a href="admin.html">Productos / Promociones</a></li>
+                <li><a href="settings.html">Estado de la App</a></li>
+                <li><a href="envio-settings.html">Envios Settings</a></li>
+                <li><a href="telefonos-db.html">Puntos Acumulados</a></li>
+                <li><a href="datos.html">Datos de Usuarios</a></li>
+                <header class="dashboard-header">
+                    <button class="logout-button" onclick="cerrarSesion()">Salir de la sesión</button>
+                </header>
+            </ul>
+            <!-- Logo al final del sidebar -->
+            <div class="sidebar-logo">
+                <img src="logo_vp.png" alt="Logo" />
+            </div>
+        </aside>
+
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+        <!-- Contenido principal -->
+        <div class="main-content-1">
+            <h1>Telefonos DB</h1>
+
+            <div class="table-header">
+                <input type="text" id="search" placeholder="Buscar productos...">
+                <button onclick="buscarProducto()">Buscar</button>
+            </div>
+
+            <table id="telefonos-table">
+                <thead>
+                    <tr>
+                        <th>Telefonos</th>
+                        <th>Puntos</th>
+                    </tr>
+                </thead>
+                <tbody id="telefonos-tabla">
+                    <!-- Los datos de los telefonos se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Script para conectar a Firebase y obtener datos -->
+    <script type="module">
+        // Configuración de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzMNKimcw1kaaJlMdTKj7RAdlsHyaImBk",
+            authDomain: "vera-pizza-app.firebaseapp.com",
+            databaseURL: "https://vera-pizza-app-default-rtdb.firebaseio.com/",
+            projectId: "vera-pizza-app",
+            storageBucket: "vera-pizza-app.appspot.com",
+            messagingSenderId: "783988757356",
+            appId: "1:783988757356:web:c66d3f2571aff0f125d949",
+            measurementId: "G-FNLSPHKXFW"
+        };
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Referencia al nodo 'clientes' en la base de datos
+        const telefonosRef = ref(database, 'clientes');
+
+        // Obtener los datos de la base de datos y cargarlos en la tabla
+        let clientesData = {};  // Almacenar los datos de los clientes
+        get(telefonosRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                clientesData = snapshot.val();
+                const tabla = document.getElementById("telefonos-tabla");
+
+                // Recorrer los datos y agregarlos a la tabla
+                for (const telefono in clientesData) {
+                    const datos = clientesData[telefono]; // Obtiene los datos de cada cliente
+                    const fila = document.createElement("tr");
+
+                    fila.innerHTML = `
+                        <td>${telefono}</td>
+                        <td>${datos.puntos}</td>
+                    `;
+                    tabla.appendChild(fila);
+                }
+            } else {
+                console.log("No hay datos disponibles.");
+            }
+        }).catch((error) => {
+            console.error("Error al obtener datos:", error);
+        });
+
+        // Función de búsqueda del teléfono
+        function buscarProducto() {
+            const inputTelefono = document.getElementById("search").value.trim();
+            const filas = document.querySelectorAll("#telefonos-tabla tr");
+            let encontrado = false; // Variable para verificar si se encontró el teléfono
+
+            // Comprobar que el teléfono existe en los datos cargados
+            for (const telefono in clientesData) {
+                if (telefono === inputTelefono) {
+                    encontrado = true;
+                    break; // Si encontramos el teléfono, no necesitamos seguir buscando
+                }
+            }
+
+            // Si el teléfono se encontró, mostramos su fila, sino, mostramos mensaje
+            if (encontrado) {
+                alert(`Teléfono ${inputTelefono} encontrado y filtrado.`);
+                filas.forEach((fila) => {
+                    const celdaTelefono = fila.querySelector("td:first-child"); // Selecciona la primera celda de la fila
+                    if (celdaTelefono && celdaTelefono.textContent.trim() === inputTelefono) {
+                        fila.style.display = ""; // Mostrar la fila si coincide
+                    } else {
+                        fila.style.display = "none"; // Ocultar las filas que no coincidan
+                    }
+                });
+            } else {
+                alert(`Teléfono ${inputTelefono} no encontrado.`);
+                filas.forEach((fila) => (fila.style.display = "")); // Mostrar todas las filas si no hay coincidencias
+            }
+        }
+
+        // Función para cerrar sesión
+        function cerrarSesion() {
+            alert("Sesión cerrada correctamente.");
+            window.location.href = "../../index.html"; // Cambia a tu página de inicio de sesión
+        }
+
+        // Exponer las funciones al ámbito global
+        window.buscarProducto = buscarProducto;
+        window.cerrarSesion = cerrarSesion;
+    </script>
+
+    <script>
+        // Ejecutar al cargar la página
+        window.addEventListener('load', window.mostrarEstadoActual);
+
+        window.toggleSidebar = function () {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content-1');
+
+            sidebar.classList.toggle('show');
+
+            if (sidebar.classList.contains('show')) {
+                mainContent.classList.remove('centered');
+            } else {
+                mainContent.classList.add('centered');
+            }
+        }
+    </script>
+</body>
+
+
+</html>
