@@ -5,8 +5,12 @@ on:
     tags:
       - 'v*.*.*'  # se ejecuta cuando subas un tag tipo v0.1.1
 
+permissions:
+  contents: write  # 🔹 necesario para que pueda crear el release
+
 jobs:
   release:
+    name: Build and Publish EXE
     runs-on: windows-latest
 
     steps:
@@ -22,7 +26,6 @@ jobs:
         run: npm ci
 
       - name: Compilar y publicar en GitHub Releases
-        run: |
-          npx electron-builder --win nsis --publish always
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --publish always
